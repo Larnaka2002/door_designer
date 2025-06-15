@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Конструктор дверей{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>🚪 Конструктор царговых дверей</h1>
+</div>
+
+<div class="main-container">
+    <div class="control-panel">
+
+        <div class="section">
+            <h2 class="section-title">Размеры полотна</h2>
+            <div class="input-group">
+                <label for="doorWidth">Ширина (мм):</label>
+                <input type="number" id="doorWidth" value="800" min="400" max="1200">
+            </div>
+            <div class="input-group">
+                <label for="doorHeight">Высота (мм):</label>
+                <input type="number" id="doorHeight" value="2000" min="1500" max="2500">
+            </div>
+            <button class="btn" onclick="updateDoorSize()">Применить размеры</button>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Профили</h2>
+
+            <div class="input-group">
+                <label for="profileType">Тип профиля:</label>
+                <select id="profileType">
+                    <option value="vertical">Стоевой</option>
+                    <option value="horizontal">Поперечный</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="profileWidth">Ширина профиля (мм):</label>
+                <input type="number" id="profileWidth" value="80" min="30" max="150">
+            </div>
+
+            <div class="input-group">
+                <label for="profileThickness">Толщина (мм):</label>
+                <input type="number" id="profileThickness" value="40" min="20" max="80">
+            </div>
+
+            <div class="input-group">
+                <label for="grooveDepth">Глубина паза (мм):</label>
+                <input type="number" id="grooveDepth" value="10" min="0" max="20">
+            </div>
+
+            <div class="input-group">
+                <label for="profileAllowance">Припуск (мм):</label>
+                <input type="number" id="profileAllowance" value="5" min="0" max="50">
+            </div>
+
+            <button class="btn" onclick="addProfile()">Добавить профиль</button>
+        </div>
+
+    </div>
+
+    <div class="visualization-panel">
+        <div class="canvas-container">
+            <canvas id="doorCanvas"></canvas>
+        </div>
+
+        <div class="dimensions-display">
+            <h3 class="section-title">Расчет размеров</h3>
+            <div id="dimensionsList">
+                <div class="dimension-item">
+                    <span class="dimension-label">Ширина:</span>
+                    <span class="dimension-value" id="widthDisplay">800 мм</span>
+                </div>
+                <div class="dimension-item">
+                    <span class="dimension-label">Высота:</span>
+                    <span class="dimension-value" id="heightDisplay">2000 мм</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="export-buttons">
+            <button class="btn" onclick="exportToPDF()">📄 PDF</button>
+            <button class="btn" onclick="exportToExcel()">📊 Excel</button>
+            <button class="btn" onclick="saveDoor()">💾 Сохранить</button>
+            <button class="btn btn-danger" onclick="clearDoor()">🗑️ Очистить</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <h2 class="modal-header">Настройки элемента</h2>
+        <div id="modalContent"></div>
+    </div>
+</div>
+{% endblock %}
