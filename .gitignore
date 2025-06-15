@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# SQLite
+*.db
+
+# MacOS
+.DS_Store
+
+# VSCode / PyCharm
+.idea/
+*.code-workspace
+
+# Flask/instance configs
+instance/config.py
