@@ -7,6 +7,11 @@ let doorData = {
     profiles: [],
     inserts: []
 };
+let isDragging = false;
+let draggedInsert = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
 
 window.onload = function () {
     canvas = document.getElementById('doorCanvas');
@@ -22,6 +27,11 @@ window.onload = function () {
     });
 
     canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('mouseleave', handleMouseUp); // сбрасываем, если мышь ушла
+
 };
 
 function updateCanvasSize() {
@@ -302,5 +312,69 @@ function handleCanvasClick(event) {
     selectedInsert.y = mouseY - selectedInsert.height / 2;
 
     drawDoor();
+}
+
+function handleCanvasClick(event) {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (event.clientX - rect.left) / scale;
+    const mouseY = (event.clientY - rect.top) / scale;
+
+    let selected = null;
+
+    doorData.inserts.forEach(insert => {
+        const inX = mouseX >= insert.x && mouseX <= insert.x + insert.width;
+        const inY = mouseY >= insert.y && mouseY <= insert.y + insert.height;
+        insert.selected = false;
+
+        if (inX && inY) {
+            selected = insert;
+        }
+    });
+
+    if (selected) {
+        selected.selected = true;
+        showInsertEditor(selected);
+    } else {
+        document.getElementById('insertEditor').style.display = 'none';
+    }
+
+    drawDoor();
+}
+
+function handleMouseDown(event) {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (event.clientX - rect.left) / scale;
+    const mouseY = (event.clientY - rect.top) / scale;
+
+    for (const insert of doorData.inserts) {
+        const inX = mouseX >= insert.x && mouseX <= insert.x + insert.width;
+        const inY = mouseY >= insert.y && mouseY <= insert.y + insert.height;
+
+        if (inX && inY) {
+            isDragging = true;
+            draggedInsert = insert;
+            dragOffsetX = mouseX - insert.x;
+            dragOffsetY = mouseY - insert.y;
+            return;
+        }
+    }
+}
+
+function handleMouseMove(event) {
+    if (!isDragging || !draggedInsert) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (event.clientX - rect.left) / scale;
+    const mouseY = (event.clientY - rect.top) / scale;
+
+    draggedInsert.x = mouseX - dragOffsetX;
+    draggedInsert.y = mouseY - dragOffsetY;
+
+    drawDoor();
+}
+
+function handleMouseUp() {
+    isDragging = false;
+    draggedInsert = null;
 }
 
