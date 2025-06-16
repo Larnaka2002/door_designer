@@ -70,6 +70,15 @@
             </div>
 
             <div class="input-group">
+                <label for="insertDirection">Ориентация вставок:</label>
+                <select id="insertDirection">
+                    <option value="horizontal">Горизонтально</option>
+                    <option value="vertical">Вертикально</option>
+                </select>
+            </div>
+
+
+            <div class="input-group">
                 <label for="insertThickness">Толщина (мм):</label>
                 <input type="number" id="insertThickness" value="4" min="1" max="20">
             </div>
@@ -79,7 +88,55 @@
                 <input type="number" id="insertGap" value="2" min="0" max="10">
             </div>
 
+            <div class="input-group">
+                <label for="insertRows">Вставок по вертикали:</label>
+                <input type="number" id="insertRows" value="1" min="1" max="10">
+            </div>
+
+            <div class="input-group">
+                <label for="insertCols">Вставок по горизонтали:</label>
+                <input type="number" id="insertCols" value="1" min="1" max="10">
+            </div>
+
+            <div class="input-group">
+                <label for="insertOffsetTop">Отступ сверху (мм):</label>
+                <input type="number" id="insertOffsetTop" value="0" min="0" max="1000">
+            </div>
+
+            <div class="input-group">
+                <label for="insertOffsetLeft">Отступ слева (мм):</label>
+                <input type="number" id="insertOffsetLeft" value="0" min="0" max="1000">
+            </div>
+
+
             <button class="btn" onclick="addInsert()">Добавить вставку</button>
+
+            <div class="section" id="insertEditor" style="display: none;">
+                <h2 class="section-title">Редактировать вставку</h2>
+
+                <div class="input-group">
+                    <label for="editX">X (мм):</label>
+                    <input type="number" id="editX" onchange="updateInsertPosition()">
+                </div>
+
+                <div class="input-group">
+                    <label for="editY">Y (мм):</label>
+                    <input type="number" id="editY" onchange="updateInsertPosition()">
+                </div>
+
+                <div class="input-group">
+                    <label for="editWidth">Ширина (мм):</label>
+                    <input type="number" id="editWidth" onchange="updateInsertSize()">
+                </div>
+
+                <div class="input-group">
+                    <label for="editHeight">Высота (мм):</label>
+                    <input type="number" id="editHeight" onchange="updateInsertSize()">
+                </div>
+
+                <button class="btn btn-danger" onclick="deleteInsert()">Удалить вставку</button>
+            </div>
+
         </div>
 
 

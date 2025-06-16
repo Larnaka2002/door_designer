@@ -18,7 +18,10 @@ window.onload = function () {
     window.addEventListener('resize', () => {
         updateCanvasSize();
         drawDoor();
+
     });
+
+    canvas.addEventListener('click', handleCanvasClick);
 };
 
 function updateCanvasSize() {
@@ -47,7 +50,6 @@ function updateDoorSize() {
         updateCanvasSize();
         drawDoor();
 
-        // обновляем отображение размеров
         document.getElementById('widthDisplay').textContent = `${newWidth} мм`;
         document.getElementById('heightDisplay').textContent = `${newHeight} мм`;
     } else {
@@ -59,16 +61,47 @@ function drawDoor() {
     ctx.fillStyle = '#0f0f0f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // рамка двери
+    // ✅ РАМКА ДВЕРИ
     ctx.strokeStyle = '#4ecdc4';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 
-    // профили
     drawProfiles();
     drawInserts();
-
 }
+
+function showInsertEditor(insert) {
+    document.getElementById('insertEditor').style.display = 'block';
+    document.getElementById('editX').value = Math.round(insert.x);
+    document.getElementById('editY').value = Math.round(insert.y);
+    document.getElementById('editWidth').value = Math.round(insert.width);
+    document.getElementById('editHeight').value = Math.round(insert.height);
+}
+
+function updateInsertPosition() {
+    const selected = doorData.inserts.find(i => i.selected);
+    if (!selected) return;
+
+    selected.x = parseInt(document.getElementById('editX').value);
+    selected.y = parseInt(document.getElementById('editY').value);
+    drawDoor();
+}
+
+function updateInsertSize() {
+    const selected = doorData.inserts.find(i => i.selected);
+    if (!selected) return;
+
+    selected.width = parseInt(document.getElementById('editWidth').value);
+    selected.height = parseInt(document.getElementById('editHeight').value);
+    drawDoor();
+}
+
+function deleteInsert() {
+    doorData.inserts = doorData.inserts.filter(i => !i.selected);
+    document.getElementById('insertEditor').style.display = 'none';
+    drawDoor();
+}
+
 
 function drawProfiles() {
     doorData.profiles.forEach(profile => {
@@ -119,12 +152,8 @@ function addProfile() {
         let left = 0;
         let right = 0;
 
-        if (verticals.length >= 1) {
-            left = verticals[0].profileWidth;
-        }
-        if (verticals.length >= 2) {
-            right = verticals[1].profileWidth;
-        }
+        if (verticals.length >= 1) left = verticals[0].profileWidth;
+        if (verticals.length >= 2) right = verticals[1].profileWidth;
 
         profile.x = left;
         profile.width = doorData.width - left - right;
@@ -134,52 +163,58 @@ function addProfile() {
         profile.y = horizontals.length === 0 ? 0 : doorData.height - width;
     }
 
-
     doorData.profiles.push(profile);
     drawDoor();
 }
 
 function addInsert() {
-    // Считываем параметры из формы
     const type = document.getElementById('insertType').value;
     const thickness = parseInt(document.getElementById('insertThickness').value);
     const gap = parseInt(document.getElementById('insertGap').value);
+    const offsetTop = parseInt(document.getElementById('insertOffsetTop').value);
+    const offsetLeft = parseInt(document.getElementById('insertOffsetLeft').value);
 
-    // Пытаемся вычислить область между профилями
-    const area = calculateInsertArea();
+    const areas = getInsertAreas();
 
-    if (!area) {
-        alert("Невозможно добавить вставку: необходимо минимум 2 стоевых и 2 поперечных профиля.");
+    if (areas.length === 0) {
+        alert("Нет доступной области: добавьте 2 стоевых и 2 поперечных профиля.");
         return;
     }
 
-    // Создаём объект вставки
+    const area = areas[0]; // пока берём первую подходящую область
+
+
+    if (!area) {
+        alert("Невозможно добавить вставку: минимум 2 стоевых и 2 поперечных профиля.");
+        return;
+    }
+
+    // Снимаем выделение со всех предыдущих
+    doorData.inserts.forEach(ins => ins.selected = false);
+
     const insert = {
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         type: type,
         thickness: thickness,
         gap: gap,
-        x: area.x + gap,
-        y: area.y + gap,
-        width: area.width - gap * 2,
-        height: area.height - gap * 2
+        x: area.x + offsetLeft + gap,
+        y: area.y + offsetTop + gap,
+        width: area.width - offsetLeft * 2 - gap * 2,
+        height: area.height - offsetTop * 2 - gap * 2,
+        selected: true
     };
 
-    // Сохраняем вставку в массив
     doorData.inserts.push(insert);
-
-    // Перерисовываем дверь с учётом новой вставки
     drawDoor();
+    showInsertEditor(insert);
 }
+
 
 function drawInserts() {
     doorData.inserts.forEach(insert => {
-        // Цвет вставки — зависит от типа
-        if (insert.type === 'glass') {
-            ctx.fillStyle = 'rgba(173, 216, 230, 0.6)'; // голубоватое стекло
-        } else {
-            ctx.fillStyle = '#aaa'; // сероватый для панелей
-        }
+        ctx.fillStyle = insert.type === 'glass'
+            ? 'rgba(173, 216, 230, 0.6)'
+            : '#aaa';
 
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1;
@@ -191,32 +226,45 @@ function drawInserts() {
 
         ctx.fillRect(x, y, w, h);
         ctx.strokeRect(x, y, w, h);
+        if (insert.selected) {
+            ctx.strokeStyle = '#ff6b6b';  // красный контур для выделенной
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - 2, y - 2, w + 4, h + 4); // выделение снаружи
+        }
+
+
     });
 }
 
-
-function calculateInsertArea() {
+function getInsertAreas() {
     const verticals = doorData.profiles.filter(p => p.type === 'vertical');
     const horizontals = doorData.profiles.filter(p => p.type === 'horizontal');
 
-    // Должно быть минимум по 2 вертикальных и 2 горизонтальных профиля
-    if (verticals.length < 2 || horizontals.length < 2) return null;
+    if (verticals.length < 2 || horizontals.length < 2) return [];
 
-    const left = verticals[0].profileWidth;
-    const right = verticals[1].profileWidth;
-    const top = horizontals[0].height;
-    const bottom = horizontals[1].height;
+    const areas = [];
 
-    return {
-        x: left,
-        y: top,
-        width: doorData.width - left - right,
-        height: doorData.height - top - bottom
-    };
+    // Обход всех пар горизонтальных профилей
+    for (let i = 0; i < horizontals.length - 1; i++) {
+        const top = horizontals[i].y + horizontals[i].height;
+        const bottom = horizontals[i + 1].y;
+
+        const left = verticals[0].profileWidth;
+        const right = verticals[1].profileWidth;
+
+        areas.push({
+            x: left,
+            y: top,
+            width: doorData.width - left - right,
+            height: bottom - top
+        });
+    }
+
+    return areas;
 }
 
+// --- Заглушки ---
 
-// Пустые функции-заглушки для кнопок
 function exportToPDF() {
     alert("Экспорт в PDF пока не реализован.");
 }
@@ -230,7 +278,7 @@ function saveDoor() {
 }
 
 function clearDoor() {
-    if (confirm("Очистить все профили?")) {
+    if (confirm("Очистить всё?")) {
         doorData.profiles = [];
         doorData.inserts = [];
         drawDoor();
@@ -240,3 +288,19 @@ function clearDoor() {
 function closeModal() {
     document.getElementById('modal').style.display = 'none';
 }
+
+function handleCanvasClick(event) {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = (event.clientX - rect.left) / scale;
+    const mouseY = (event.clientY - rect.top) / scale;
+
+    const selectedInsert = doorData.inserts.find(ins => ins.selected);
+    if (!selectedInsert) return;
+
+    // Центр вставки станет под курсором
+    selectedInsert.x = mouseX - selectedInsert.width / 2;
+    selectedInsert.y = mouseY - selectedInsert.height / 2;
+
+    drawDoor();
+}
+
