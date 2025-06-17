@@ -54,6 +54,21 @@
                 <input type="number" id="profileAllowance" value="5" min="0" max="50">
             </div>
 
+            <div class="input-group">
+                <label for="grooveWidth">Ширина паза (мм):</label>
+                <input type="number" id="grooveWidth" value="8" min="0" max="20">
+            </div>
+
+            <div class="input-group">
+                <label for="grooveSide">Сторона паза:</label>
+                <select id="grooveSide">
+                    <option value="inner">Внутрь</option>
+                    <option value="outer">Наружу</option>
+                    <option value="both">С обеих сторон</option>
+                </select>
+            </div>
+
+
             <button class="btn" onclick="addProfile()">Добавить профиль</button>
         </div>
         <div class="section">
