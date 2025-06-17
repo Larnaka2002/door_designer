@@ -179,10 +179,14 @@ function addProfile() {
 
 function addInsert() {
     const type = document.getElementById('insertType').value;
-    const thickness = parseInt(document.getElementById('insertThickness').value);
-    const gap = parseInt(document.getElementById('insertGap').value);
-    const offsetTop = parseInt(document.getElementById('insertOffsetTop').value);
-    const offsetLeft = parseInt(document.getElementById('insertOffsetLeft').value);
+    const direction = document.getElementById('insertDirection').value;
+    const thickness = parseFloat(document.getElementById('insertThickness').value);
+    const gap = parseFloat(document.getElementById('insertGap').value);
+    const mount_type = document.getElementById('insertMountType').value;
+    const offsetTop = parseFloat(document.getElementById('insertOffsetTop').value);
+    const offsetLeft = parseFloat(document.getElementById('insertOffsetLeft').value);
+
+    const grooveDepth = 10; // пока жёстко, позже возьмём из профилей
 
     const areas = getInsertAreas();
 
@@ -191,26 +195,38 @@ function addInsert() {
         return;
     }
 
-    const area = areas[0]; // пока берём первую подходящую область
+    const area = areas[0];
 
+    // Снимаем выделение со всех предыдущих вставок
+    doorData.inserts.forEach(ins => ins.selected = false);
 
-    if (!area) {
-        alert("Невозможно добавить вставку: минимум 2 стоевых и 2 поперечных профиля.");
-        return;
+    // Расчёт ширины/высоты вставки с учётом пазов
+    let width = area.width - offsetLeft * 2;
+    let height = area.height - offsetTop * 2;
+
+    if (direction === "vertical" && mount_type === "in_slot") {
+        width -= 2 * grooveDepth + 2 * gap;
+    } else {
+        width -= 2 * gap;
     }
 
-    // Снимаем выделение со всех предыдущих
-    doorData.inserts.forEach(ins => ins.selected = false);
+    if (direction === "horizontal" && mount_type === "in_slot") {
+        height -= 2 * grooveDepth + 2 * gap;
+    } else {
+        height -= 2 * gap;
+    }
 
     const insert = {
         id: Date.now() + Math.random(),
         type: type,
+        direction: direction,
         thickness: thickness,
+        mount_type: mount_type,
         gap: gap,
         x: area.x + offsetLeft + gap,
         y: area.y + offsetTop + gap,
-        width: area.width - offsetLeft * 2 - gap * 2,
-        height: area.height - offsetTop * 2 - gap * 2,
+        width: width,
+        height: height,
         selected: true
     };
 
@@ -222,29 +238,42 @@ function addInsert() {
 
 function drawInserts() {
     doorData.inserts.forEach(insert => {
-        ctx.fillStyle = insert.type === 'glass'
-            ? 'rgba(173, 216, 230, 0.6)'
-            : '#aaa';
-
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
-
         const x = insert.x * scale;
         const y = insert.y * scale;
         const w = insert.width * scale;
         const h = insert.height * scale;
 
-        ctx.fillRect(x, y, w, h);
-        ctx.strokeRect(x, y, w, h);
-        if (insert.selected) {
-            ctx.strokeStyle = '#ff6b6b';  // красный контур для выделенной
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x - 2, y - 2, w + 4, h + 4); // выделение снаружи
+        // 🔹 Цвет заливки по типу посадки
+        if (insert.mount_type === 'in_slot') {
+            ctx.fillStyle = insert.type === 'glass'
+                ? 'rgba(173, 216, 230, 0.5)' // голубоватое стекло
+                : 'rgba(150, 150, 250, 0.5)'; // синие непрозрачные вставки
+        } else {
+            ctx.fillStyle = insert.type === 'glass'
+                ? 'rgba(220, 220, 220, 0.5)' // светлое стекло снаружи
+                : '#aaa'; // обычная вставка
         }
 
+        // 🔲 Основной прямоугольник
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
 
+        // 🔺 Обводка если выделена
+        if (insert.selected) {
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+        }
+
+        // 🏷 Надпись (тип + ориентация)
+        ctx.fillStyle = '#000';
+        ctx.font = '10px Arial';
+        ctx.fillText(`${insert.type}/${insert.direction}`, x + 4, y + 12);
     });
 }
+
 
 function getInsertAreas() {
     const verticals = doorData.profiles.filter(p => p.type === 'vertical');
